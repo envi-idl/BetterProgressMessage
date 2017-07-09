@@ -9,6 +9,7 @@
 ;-
 function betterENVIProgress::AbortRequested
   compile_opt idl2
+  on_error, 2
   return, self.ABORTABLE.abort_requested
 end
 
@@ -24,6 +25,7 @@ end
 ;-
 pro betterENVIProgress::Finish
   compile_opt idl2
+  on_error, 2
   self.CHANNEL.Broadcast, ENVIFinishMessage(self.ABORTABLE)
 end
 
@@ -64,9 +66,9 @@ end
 ;
 ; :Author: Zachary Norman - GitHub: znorman17
 ;-
-function betterENVIProgress::Init, progressTitle
+function betterENVIProgress::Init, progressTitle, PRINT = print
   compile_opt idl2
-  ;on_error, 2
+  on_error, 2
   
   ;get current session of ENVI
   e = envi(/CURRENT)
@@ -76,7 +78,7 @@ function betterENVIProgress::Init, progressTitle
 
   ;make sure we passed in a progress title
   if (progressTitle eq !NULL) then begin
-    message, 'progressTitle argument was not provided, required!'
+    message, '"progressTitle" argument was not provided, required!'
   endif
 
   ;initialize object properties
@@ -87,6 +89,11 @@ function betterENVIProgress::Init, progressTitle
   ; Broadcast a start message to the ENVI system
   start = ENVIStartMessage(progressTitle, self.ABORTABLE)
   self.CHANNEL.Broadcast, start
+  
+  ;check if we need to print
+  if keyword_set(print) then begin
+    print, progressTitle
+  endif
   
   return, 1
 end
@@ -106,25 +113,40 @@ end
 ;    percent: in, required, type=int/long/byte, range=[0:100]
 ;      This required parameter is the percent (from zero to 
 ;      100) that will set the progress on the progress bar.
-;
+;  
+;  :Keywords:
+;    PRINT: in, optional, type=boolean, default=false
+;      If set, then the progress will also be printed to the console.
 ;
 ; :Author: Zachary Norman - GitHub: znorman17
 ;-
-pro betterENVIProgress::SetProgress, msg, percent
+pro betterENVIProgress::SetProgress, msg, percent, PRINT = print, NO_TAB = no_tab
   compile_opt idl2
+  on_error, 2
   
   ;make sure we passed in our arguments
   if (msg eq !NULL) then begin
-    message, 'msg not provided, required!'
+    message, '"msg" not provided, required!'
   endif
   if (percent eq !NULL) then begin
-    message, 'percent not provided, required!'
+    message, '"percent" not provided, required!'
   endif
   
+  ;round our percent
+  usePercent = round(percent)
+  
   ;make our progress message
-  progress = ENVIProgressMessage(msg, round(percent), self.ABORTABLE)
+  progress = ENVIProgressMessage(msg, usePercent, self.ABORTABLE)
   self.CHANNEL.Broadcast, progress
   
+  ;check if we also need to print the message
+  if keyword_set(print) then begin
+    if keyword_set(no_tab) then begin
+      print, msg
+    endif else begin
+      print, '  ' + msg
+    endelse
+  endif
 end
 
 ;+
