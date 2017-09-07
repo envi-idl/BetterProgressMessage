@@ -142,9 +142,9 @@ pro betterENVIProgress::SetProgress, msg, percent, PRINT = print, NO_TAB = no_ta
   ;check if we also need to print the message
   if keyword_set(print) then begin
     if keyword_set(no_tab) then begin
-      print, msg
+      print, msg + ', Progress = ' + strtrim(usePercent,2)
     endif else begin
-      print, '  ' + msg
+      print, '  ' + msg + ', Progress = ' + strtrim(usePercent,2)
     endelse
   endif
 end
