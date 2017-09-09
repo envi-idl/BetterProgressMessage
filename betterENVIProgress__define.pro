@@ -46,6 +46,7 @@ pro betterENVIProgress::_Initialize
   self.PROGRESS = 0
   self.MESSAGE = ''
   self.INIT = 0
+  self.START_TIME = systime(/SECONDS)
 end
 
 
@@ -120,14 +121,23 @@ end
 ;
 ; :Author: Zachary Norman - GitHub: znorman17
 ;-
-pro betterENVIProgress::SetProgress, msg, percent, PRINT = print, NO_TAB = no_tab
+pro betterENVIProgress::SetProgress, msg, percent, PRINT = print, NO_TAB = no_tab, TIME = time
   compile_opt idl2
   on_error, 2
   
   ;make sure we passed in our arguments
-  if (msg eq !NULL) then begin
-    message, '"msg" not provided, required!'
+  if ~keyword_set(msg) AND ~keyword_set(self.PREV_MESSAGE) then begin
+    message, '"msg" not provided and previous message not cached, required!'
   endif
+  
+  ;save our message if we have one
+  if keyword_set(msg) then begin
+    self.PREV_MESSAGE = msg
+  endif
+  
+  ;use our previous message
+  if ~keyword_set(msg) then msg = self.PREV_MESSAGE
+  
   if (percent eq !NULL) then begin
     message, '"percent" not provided, required!'
   endif
@@ -135,16 +145,24 @@ pro betterENVIProgress::SetProgress, msg, percent, PRINT = print, NO_TAB = no_ta
   ;round our percent
   usePercent = round(percent)
   
+  ;calculate the approximate time it should take to finish
+  if keyword_set(time) AND (usePercent gt 0) then begin
+    tLeft = strtrim((100 - percent)*((systime(/SECONDS) - self.START_TIME)/percent),2)
+    add = ' [ ' + strmid(tLeft, 0, strpos(tLeft, '.')+2) + ' (s) left ]'
+  endif else begin
+    add = ''
+  endelse
+  
   ;make our progress message
-  progress = ENVIProgressMessage(msg, usePercent, self.ABORTABLE)
+  progress = ENVIProgressMessage(msg + add , usePercent, self.ABORTABLE)
   self.CHANNEL.Broadcast, progress
   
   ;check if we also need to print the message
   if keyword_set(print) then begin
     if keyword_set(no_tab) then begin
-      print, msg + ', Progress = ' + strtrim(usePercent,2)
+      print, msg + ', Progress = ' + strtrim(usePercent,2) + add
     endif else begin
-      print, '  ' + msg + ', Progress = ' + strtrim(usePercent,2)
+      print, '  ' + msg + ', Progress = ' + strtrim(usePercent,2) + add
     endelse
   endif
 end
@@ -164,6 +182,8 @@ pro betterENVIProgress__define
     ABORTABLE: ENVIAbortable(),$
     PROGRESS: 0l,$
     MESSAGE: '',$
+    PREV_MESSAGE:'',$
+    START_TIME:1d,$
     INIT: 0 $
   }
 end
