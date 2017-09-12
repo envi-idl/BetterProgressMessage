@@ -146,7 +146,7 @@ pro betterENVIProgress::SetProgress, msg, percent, PRINT = print, NO_TAB = no_ta
   usePercent = round(percent)
   
   ;calculate the approximate time it should take to finish
-  if keyword_set(time) AND (usePercent gt 0) then begin
+  if keyword_set(time) AND (percent gt 0) then begin
     tLeft = strtrim((100 - percent)*((systime(/SECONDS) - self.START_TIME)/percent),2)
     add = ' [ ' + strmid(tLeft, 0, strpos(tLeft, '.')+2) + ' (s) left ]'
   endif else begin
